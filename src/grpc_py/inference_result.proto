@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.dubhe.inference.grpc";
+option java_outer_classname = "InferenceCallbackProto";
+option objc_class_prefix = "";
+
+service InferenceCallbackService {
+  rpc checkpoint (InferenceCallbackRequest) returns (InferenceCallbackResponse) {}
+}
+
+message InferenceCallbackRequest {
+  string task_id = 1;
+  string result_type = 2;
+  string analysis_result = 3;
+  string callback_type=4;
+}
+
+message InferenceCallbackResponse {
+  int32 code = 1;
+  string msg = 2;
+}
+
