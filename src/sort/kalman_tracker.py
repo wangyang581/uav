@@ -12,7 +12,7 @@ class KalmanBoxTracker(object):
     """
     This class represents the internal state of individual tracked objects observed as bbox.
     """
-    count = 0
+    count = 1
 
     def __init__(self, bbox):
         """
@@ -42,34 +42,30 @@ class KalmanBoxTracker(object):
         self.age = 0
 
         # addtional fields
-        self.face_name = None 
-        self.face_conf = {}
-        self.feature = None 
+        self.face_name = 'xxxx'
+        self.face_conf = {self.face_name: [-1.0]}
 
-    def update_face_info(self, name, conf, feature):
-        self.face_conf[name] = self.face_conf.get(name, [])
+    def update_face_info(self, name, conf):
+        if conf < -1.0:
+            self.face_name = name 
+            self.face_conf[name] = [conf]
+            return False 
+        
+        self.face_conf[name] = self.face_conf.get(name, [-1.0])
         self.face_conf[name].append(conf)
 
         name_changed = False
-        face_changed = False 
 
         if len(self.face_conf[name]) > 1000:
             self.face_conf[name].pop(0)
 
-        if self.face_name is None or (len(self.face_conf[name]) > len(self.face_conf[self.face_name])):
+        if len(self.face_conf[name]) > len(self.face_conf[self.face_name]):
             self.face_name = name 
             name_changed = True 
-
-        # if (self.feature is None) or (np.dot(self.feature, feature) < 0.6):
-        #     self.feature = feature 
-        #     face_changed = True 
         
-        return name_changed, face_changed 
+        return name_changed 
 
     def get_face_info(self):
-        if self.face_name is None:
-            return 'unknown', 0, 0, 0
-
         name = self.face_name 
         face_conf = sum(self.face_conf[name]) / len(self.face_conf[name])
         

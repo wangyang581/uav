@@ -47,7 +47,8 @@ def distance2kps(points, distance, max_shape=None):
     return np.stack(preds, axis=-1)
 
 class SCRFD:
-    def __init__(self, triton_host='localhost:8000', model_name='ensemble_scrfd'):
+    def __init__(self, triton_port=8000, model_name='ensemble_scrfd'):
+        triton_host = '127.0.0.1:{}'.format(triton_port)
         self.client = httpclient.InferenceServerClient(triton_host)
         self.model_name = model_name
                                                                                     

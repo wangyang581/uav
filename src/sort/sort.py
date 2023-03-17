@@ -2,8 +2,6 @@
 As implemented in https://github.com/abewley/sort but with some modifications
 """
 
-from __future__ import print_function
-
 import numpy as np
 from src.sort.data_association import associate_detections_to_trackers
 from src.sort.kalman_tracker import KalmanBoxTracker
@@ -19,10 +17,10 @@ class Sort:
         self.trackers = []
         self.frame_count = 0
 
-    def update_face_info(self, id, name, conf, feature):
+    def update_face_info(self, id, name, conf):
         for trk in self.trackers:
-            if trk.id+1 == id:
-                return trk.update_face_info(name, conf, feature)
+            if trk.id == id:
+                return trk.update_face_info(name, conf)
         return False 
 
     def update(self, dets):
@@ -59,7 +57,7 @@ class Sort:
                     trk.update(dets[d, :][0])
 
                     det = trk.get_state()
-                    ret[d[0]] = np.concatenate((det, [trk.id+1, trk.hits])).reshape(1, -1)
+                    ret[d[0]] = np.concatenate((det, [trk.id, trk.hits])).reshape(1, -1)
 
             # create and initialise new trackers for unmatched detections
             for i in unmatched_dets:
@@ -67,12 +65,12 @@ class Sort:
                 self.trackers.append(trk)
 
                 det = trk.get_state()
-                ret[i] = np.concatenate((det, [trk.id+1, trk.hits])).reshape(1, -1)
+                ret[i] = np.concatenate((det, [trk.id, trk.hits])).reshape(1, -1)
         else:
             ret = np.zeros((len(self.trackers), 6))
             for t, trk in enumerate(self.trackers):
                 det = trk.get_state()
-                ret[t] = np.concatenate((det, [trk.id+1, trk.hits])).reshape(1, -1)
+                ret[t] = np.concatenate((det, [trk.id, trk.hits])).reshape(1, -1)
 
         i = len(self.trackers)
         for trk in reversed(self.trackers):
@@ -88,9 +86,9 @@ class Sort:
         ret = []
         for trk in self.trackers:
             det = trk.get_state()
-            face_info = trk.get_face_info()
+            name, conf = trk.get_face_info()
             arr = [float(d) for d in det]
-            arr.extend([trk.id+1, trk.hits])
-            arr.extend(face_info)
+            arr.extend([trk.id, trk.hits])
+            arr.extend([name, conf])
             ret.append(arr)
         return ret 

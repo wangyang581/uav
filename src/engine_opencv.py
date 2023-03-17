@@ -1,85 +1,64 @@
-from src.utils import get_logger 
-from src.sort.sort import Sort
-from src.stream_factory import StreamFactory
-from src.grpc_client import GrpcClient
-
 from threading import Thread 
 import queue
+import time 
 
 import cv2 
 
 from src.scrfd import SCRFD 
 from src.face_recognition import FaceRecog 
-
+from src.sort.sort import Sort
+from src.face_database import FaceDatabase
 from src.post_process import post_process
+from src.global_dict import gd
 
 class Engine:
-    def __init__(self,
-                 logger,
-                 global_info):
-        self.task_dict = {}
-        self.cam_dict = {}
-
+    def __init__(self, logger, args):
         self.logger = logger
-        self.global_info = global_info
+        self.args = args
 
-        self.logger_dict = {}
-        self.sort_dict = {}
-        self.grpc_dict = {}
-        self.pipe_dict = {}
-        self.lastt_dict = {}        
+        self.cam_dict = {}
+        self.task_dict = {}
+
+        self.face_database = FaceDatabase(args.redis_port, args.face_database_thres)
+        self.scrfd = SCRFD(args.triton_port, args.face_detec_model_name) 
+        self.face_recog = FaceRecog(args.triton_port, args.redis_port, args.face_recog_model_name)
 
         self.logger.info('engine inited ------') 
 
-    def add_source(self, uri_name, task_id, grpc_address, rtmp_address, stream_frequency, heart_beat):
-        if task_id not in self.logger_dict.keys():
-            self.logger_dict[task_id] = get_logger('./logs', f'{task_id}.log')
+    def add_source(self, task_id, stream_url, grpc_address, stream_frequency, rule_info):
+        gd.add_task(task_id, grpc_address, stream_frequency, rule_info)
 
-        self.sort_dict[task_id] = Sort()
-        self.lastt_dict[task_id] = 0
+        decode_mode = rule_info = rule_info.get('mode', 'cpu')
+        decode_mode = str(decode_mode)
 
-        self.grpc_dict[task_id] = GrpcClient(grpc_address, task_id) if grpc_address else None
-        self.pipe_dict[task_id] = StreamFactory.new_pipe(stream_frequency, rtmp_address) if rtmp_address else None
-
-        self.logger.info(f'creating video capture task {uri_name} ------')
-        self.cam_dict[task_id] = VideoCapture(uri_name, self.logger)
+        self.logger.info(f'creating video capture task {stream_url} ------')
+        self.cam_dict[task_id] = VideoCapture(task_id, stream_url, self.logger, mode=decode_mode)
         self.cam_dict[task_id].start()
 
         self.logger.info(f'creating stream task {task_id} ------')
-        self.task_dict[task_id] = StreamTask(self.cam_dict, task_id, self.logger_dict, self.sort_dict, \
-            self.grpc_dict, self.pipe_dict, self.lastt_dict, stream_frequency, heart_beat, self.global_info)
+        self.task_dict[task_id] = StreamTask(task_id, self.args, self.cam_dict)
         self.task_dict[task_id].start()
     
     def remove_source(self, task_id):
-        if task_id not in self.task_dict.keys():
-            self.logger.info(f'no task_id {task_id} ------')
-            return False 
+        if task_id in self.cam_dict.keys():
+            self.cam_dict[task_id].stop()
+            self.cam_dict.pop(task_id)
 
-        self.cam_dict[task_id].stop()
-        self.cam_dict.pop(task_id)
-        
         self.task_dict.pop(task_id)
-
-        self.sort_dict.pop(task_id)
-        self.lastt_dict.pop(task_id)
-
-        self.grpc_dict.pop(task_id)
-        if self.pipe_dict[task_id] is not None:
-            self.pipe_dict[task_id].kill()
-        self.pipe_dict.pop(task_id)
-
-        return True         
+        gd.remove_task(task_id)        
+    
 
 class VideoCapture(Thread):
-    def __init__(self, name, logger, mode='gpu'):
-        super(VideoCapture, self).__init__()
-        self.mode = mode 
-        self.name = name
+    def __init__(self, task_id, stream_url, logger, mode='cpu'):
+        super(VideoCapture, self).__init__() 
+        self.task_id = task_id
+        self.stream_url = stream_url
+        self.mode = mode
 
         if self.mode == 'cpu':
-            self.cap = cv2.VideoCapture(name)
+            self.cap = cv2.VideoCapture(stream_url)
         elif self.mode == 'gpu':
-            self.cap = cv2.cudacodec.createVideoReader(name)
+            self.cap = cv2.cudacodec.createVideoReader(stream_url)
         else:
             raise
 
@@ -87,77 +66,71 @@ class VideoCapture(Thread):
         self.logger = logger
         self.q = queue.Queue()
 
+        self.frame_count = 0
+
     # read frames as soon as they are available, keeping only most recent one
     def run(self):
-        self.logger.info(f'videocapture {self.name} start ------')
+        self.logger.info(f'videocapture task_id {self.task_id} stream_url {self.stream_url} start ------')
         while not self.stopped:
             if self.mode == 'cpu':
                 ret, frame = self.cap.read()
-            elif self.mode == 'gpu':
+            else :
                 ret, frame = self.cap.nextFrame()
-            else:
-                raise
 
             if not ret:
+                self.stopped = True 
                 break
-            if not self.q.empty():
-                try:
-                    self.q.get_nowait()   # discard previous (unprocessed) frame
-                except queue.Empty:
-                    pass
-            self.q.put(frame)
+
+            skip_rate = gd.rule_info_dict[self.task_id].get('skip_frame_rate', 0)
+
+            if skip_rate <= 0:
+                if not self.q.empty():
+                    try:
+                        self.q.get_nowait()   # discard previous (unprocessed) frame
+                    except queue.Empty:
+                        pass
+                self.q.put(frame)
+            elif self.frame_count % skip_rate == 0:
+                self.q.put(frame)
+
+            self.frame_count += 1
 
         if self.mode == 'cpu':
             self.cap.release()
-        self.stopped = True 
-        self.logger.error(f'video capture {self.name} break ------')
+
+        self.logger.info(f'videocapture task_id {self.task_id} stream_url {self.stream_url} stopped ------')
 
     def stop(self):
-        if self.mode == 'cpu':
-            self.cap.release()
         self.stopped = True
-        self.logger.info(f'stop video capture {self.name}------')
+        self.logger.info(f'stopping videocapture task_id {self.task_id} stream_url {self.stream_url}------')
 
     def read(self):
+        if self.stopped: return None 
+
         frame = self.q.get()
-        if self.mode == 'gpu':
+        if self.mode == 'cpu':
+            frame = cv2.resize(frame, (1920, 1080))
+        else:
+            frame = cv2.cuda.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+            frame = cv2.cuda.resize(frame, (1920, 1080))
             frame = frame.download()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
 
         return frame
 
 class StreamTask(Thread):
-    def __init__(self, 
-                 cam_dict, 
-                 task_id, 
-                 logger_dict, 
-                 sort_dict, 
-                 grpc_dict, 
-                 pipe_dict, 
-                 lastt_dict,
-                 stream_frequency,
-                 heart_beat,
-                 global_info):
+    def __init__(self, task_id, args, cam_dict):
         super(StreamTask, self).__init__()
 
         self.task_id = task_id 
-
-        self.logger = logger_dict[task_id]
-        self.sort = sort_dict[task_id]
-        self.grpc = grpc_dict.get(task_id, None)
-        self.pipe = pipe_dict.get(task_id, None)
-        self.lastt_dict = lastt_dict
-
-        self.stream_frequency = stream_frequency
-        self.heart_beat = heart_beat
-
-        self.scrfd = SCRFD(global_info['triton_host'], global_info['face_detec_model_name']) 
-        self.face_recog = FaceRecog(global_info['triton_host'], global_info['face_recog_model_name'])
-
+        self.args = args 
         self.cam = cam_dict[task_id]
-        self.global_info = global_info
 
+        self.logger = gd.logger_dict[task_id]
         self.frame_count = 0
+
+        self.scrfd = SCRFD(args.triton_port, args.face_detec_model_name) 
+        self.face_recog = FaceRecog(args.triton_port, args.redis_port, args.face_recog_model_name)
+        self.sort = Sort()
 
     def run(self):
         self.logger.info(f'stream task {self.task_id} start ------')
@@ -166,11 +139,8 @@ class StreamTask(Thread):
             if img is None:
                 break
 
-            # self.frame_count += 1
-            # if self.frame_count % self.stream_frequency == 0:
-            #     self.heart_beat.beat()
-            self.heart_beat.beat()
+            self.frame_count += 1
+            gd.heart_beat_dict[self.task_id].beat()
 
-            post_process(img, self.logger, self.task_id, self.scrfd, self.sort, self.face_recog, \
-                         self.grpc, self.pipe, self.lastt_dict, self.global_info)
+            post_process(img, self.task_id, self.args, self.logger, self.scrfd, self.sort, self.face_recog)
         self.logger.info(f'stream task {self.task_id} break ------')
