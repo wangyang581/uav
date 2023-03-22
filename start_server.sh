@@ -1,2 +1,2 @@
 #/usr/src/tensorrt/bin/trtexec --onnx=models/face_recog/1/backbone_final.onnx --minShapes=input:1x3x112x112 --optShapes=input:8x3x112x112 --maxShapes=input:8x3x112x112 --workspace=4096 --saveEngine=models/face_recog/1/model.plan
-redis-server --port 8110 & tritonserver --http-port 8111 --grpc-port 8112 --metrics-port 8113 --model-repository models --strict-model-config=false & python3 flask_server.py --redis_port 8110 --triton_port 8111
+redis-server --port 8110 --save 900 1 & tritonserver --http-port 8111 --grpc-port 8112 --metrics-port 8113 --model-repository models --strict-model-config=false & python3 flask_server.py --redis_port 8110 --triton_port 8111

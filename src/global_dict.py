@@ -42,7 +42,8 @@ class GlobalDict():
         
         if task_id in self.grpc_dict.keys(): self.grpc_dict.pop(task_id)
         if task_id in self.pipe_dict.keys():
-            self.pipe_dict[task_id].kill()
+            if self.pipe_dict[task_id]:
+                self.pipe_dict[task_id].kill()
             self.pipe_dict.pop(task_id)
         if task_id in self.stream_frequency_dict.keys():
             self.stream_frequency_dict.pop(task_id)

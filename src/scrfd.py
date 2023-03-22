@@ -51,6 +51,14 @@ class SCRFD:
         triton_host = '127.0.0.1:{}'.format(triton_port)
         self.client = httpclient.InferenceServerClient(triton_host)
         self.model_name = model_name
+
+        # Health check
+        # if not self.client.is_server_live():
+        #     raise Exception('scrfd client failed: is_server_live')
+        # if not self.client.is_server_ready():
+        #     raise Exception('scrfd client failed: is_server_ready')
+        # if not self.client.is_model_ready(self.model_name):
+        #     raise Exception('scrfd client failed: is_model_ready')
                                                                                     
         self.center_cache = {}
         self.nms_thresh = 0.4

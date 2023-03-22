@@ -9,6 +9,14 @@ class FaceRecog:
         self.client = httpclient.InferenceServerClient(triton_host)
         self.model_name = model_name 
 
+        # Health check
+        # if not self.client.is_server_live():
+        #     raise Exception('face recog client failed: is_server_live')
+        # if not self.client.is_server_ready():
+        #     raise Exception('face recog client failed: is_server_ready')
+        # if not self.client.is_model_ready(self.model_name):
+        #     raise Exception('face recog client failed: is_model_ready')
+
         self.input_name = 'input'
         self.output_names = ['features', 'norms']
 
@@ -28,7 +36,7 @@ class FaceRecog:
                                      request_id=str(1),
                                      outputs=self.outputs)
 
-        #result = response.get_response()
+        # result = response.get_response()
 
         features, norms = [response.as_numpy(name) for name in self.output_names]
 

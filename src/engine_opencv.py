@@ -60,7 +60,7 @@ class VideoCapture(Thread):
         elif self.mode == 'gpu':
             self.cap = cv2.cudacodec.createVideoReader(stream_url)
         else:
-            raise
+            raise Exception(f'do not support such mode {self.mode}')
 
         self.stopped = False
         self.logger = logger
@@ -88,9 +88,11 @@ class VideoCapture(Thread):
                     try:
                         self.q.get_nowait()   # discard previous (unprocessed) frame
                     except queue.Empty:
-                        pass
+                        pass 
                 self.q.put(frame)
             elif self.frame_count % skip_rate == 0:
+                if self.q.qsize() >= 100:
+                    self.q.queue.clear()
                 self.q.put(frame)
 
             self.frame_count += 1
