@@ -21,6 +21,8 @@ class GlobalDict():
 
         self.heart_beat_dict = {}
 
+        self.face_id_conf = {}
+
     def add_task(self, task_id, grpc_address, stream_frequency, rule_info):
         if task_id not in self.logger_dict.keys():
             self.logger_dict[task_id] = get_logger('./logs', f'{task_id}.log')

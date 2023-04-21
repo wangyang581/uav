@@ -21,7 +21,7 @@ class Engine:
 
         self.face_database = FaceDatabase(args.redis_port, args.face_database_thres)
         self.scrfd = SCRFD(args.triton_port, args.face_detec_model_name) 
-        self.face_recog = FaceRecog(args.triton_port, args.redis_port, args.face_recog_model_name)
+        self.face_recog = FaceRecog(args.triton_port, args.redis_port, args.face_database_thres, args.face_recog_model_name)
 
         self.logger.info('engine inited ------') 
 
@@ -72,13 +72,19 @@ class VideoCapture(Thread):
     def run(self):
         self.logger.info(f'videocapture task_id {self.task_id} stream_url {self.stream_url} start ------')
         while not self.stopped:
-            if self.mode == 'cpu':
-                ret, frame = self.cap.read()
-            else :
-                ret, frame = self.cap.nextFrame()
-
-            if not ret:
-                self.stopped = True 
+            try:
+                if self.mode == 'cpu':
+                    ret, frame = self.cap.read()
+                    if not ret: break
+                    frame = cv2.resize(frame, (1920, 1080))
+                else :
+                    ret, frame = self.cap.nextFrame()
+                    if not ret: break 
+                    frame = cv2.cuda.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+                    frame = cv2.cuda.resize(frame, (1920, 1080))
+                    frame = frame.download()
+            except Exception as e:
+                self.logger.error(f'stream read errer: {e} ------')
                 break
 
             skip_rate = gd.rule_info_dict[self.task_id].get('skip_frame_rate', 0)
@@ -91,15 +97,17 @@ class VideoCapture(Thread):
                         pass 
                 self.q.put(frame)
             elif self.frame_count % skip_rate == 0:
-                if self.q.qsize() >= 100:
+                if self.q.qsize() >= 50:
                     self.q.queue.clear()
                 self.q.put(frame)
 
             self.frame_count += 1
 
+        self.q.queue.clear()
         if self.mode == 'cpu':
             self.cap.release()
 
+        self.stopped = True
         self.logger.info(f'videocapture task_id {self.task_id} stream_url {self.stream_url} stopped ------')
 
     def stop(self):
@@ -110,13 +118,6 @@ class VideoCapture(Thread):
         if self.stopped: return None 
 
         frame = self.q.get()
-        if self.mode == 'cpu':
-            frame = cv2.resize(frame, (1920, 1080))
-        else:
-            frame = cv2.cuda.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-            frame = cv2.cuda.resize(frame, (1920, 1080))
-            frame = frame.download()
-
         return frame
 
 class StreamTask(Thread):
@@ -131,7 +132,7 @@ class StreamTask(Thread):
         self.frame_count = 0
 
         self.scrfd = SCRFD(args.triton_port, args.face_detec_model_name) 
-        self.face_recog = FaceRecog(args.triton_port, args.redis_port, args.face_recog_model_name)
+        self.face_recog = FaceRecog(args.triton_port, args.redis_port, args.face_database_thres, args.face_recog_model_name)
         self.sort = Sort()
 
     def run(self):
@@ -139,6 +140,7 @@ class StreamTask(Thread):
         while not self.cam.stopped:
             img = self.cam.read() 
             if img is None:
+                self.logger.error('img is none ------')
                 break
 
             self.frame_count += 1

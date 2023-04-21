@@ -4,7 +4,7 @@ import tritonclient.http as httpclient
 from src.face_database import FaceDatabase 
 
 class FaceRecog:
-    def __init__(self, triton_port=8000, redis_port=7999, model_name='face_recog'):
+    def __init__(self, triton_port=8000, redis_port=7999, face_thres=0.35, model_name='face_recog'):
         triton_host = '127.0.0.1:{}'.format(triton_port)
         self.client = httpclient.InferenceServerClient(triton_host)
         self.model_name = model_name 
@@ -22,7 +22,7 @@ class FaceRecog:
 
         self.inputs = [httpclient.InferInput(self.input_name, [1, 3, 112, 112], 'FP32')]
         self.outputs = [httpclient.InferRequestedOutput(name) for name in self.output_names]
-        self.face_database = FaceDatabase(redis_port, 0.35)
+        self.face_database = FaceDatabase(redis_port, face_thres)
 
     def get_features(self, faces_bgr):
         faces_np = np.array(faces_bgr, dtype=np.float32)

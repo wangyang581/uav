@@ -22,9 +22,13 @@ def post_process(img_bgr, task_id, args, logger, scrfd, sort, face_recog):
     alert_time = gd.rule_info_dict[task_id].get('alert_time', '60')
     alert_time = int(alert_time)
 
-    for (output, bbox, kps) in zip(track_outputs, bboxes, kpss):      
-        if output[5] % 5:
+    for (output, bbox, kps) in zip(track_outputs, bboxes, kpss):
+        face_id = output[4]
+        face_id_conf = gd.face_id_conf.get(face_id, 0.0)
+        if bbox[4] < face_id_conf:  
             continue
+
+        gd.face_id_conf[face_id] = bbox[4]
 
         face_bgr = norm_crop(img_bgr, kps)
 
@@ -47,7 +51,7 @@ def post_process(img_bgr, task_id, args, logger, scrfd, sort, face_recog):
         face_info['bbox'] = bbox.tolist()
         result_details['face_data'].append(face_info)
 
-        logger.info(f'task id: {task_id}, top1 conf: {name}, {conf:.4f} ---')
+        logger.info(f'task id: {task_id}, name:{name}, name_conf:{conf:.4f}, face_conf:{bbox[4]:.4f}, hits:{output[5]} ---')
 
     t4 = time.time() 
 
