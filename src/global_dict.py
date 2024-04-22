@@ -62,7 +62,7 @@ class GlobalDict():
                 self.pipe_dict[task_id].kill()
 
             stream_frequency = self.stream_frequency_dict.get(task_id, 25)
-            self.pipe_dict[task_id] = StreamFactory.new_pipe(stream_frequency, f'{rtmp_server_uri}_{task_id}')
+            self.pipe_dict[task_id] = StreamFactory.new_pipe(stream_frequency, f'{rtmp_server_uri}{task_id}')
 
     def remove_push_stream_pipe(self, task_id):
         if task_id in self.pipe_dict.keys():
