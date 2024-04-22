@@ -58,6 +58,7 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
 
         for box, track_id in zip(boxes, track_ids):
             if bool(track_history):
+                
                 if track_id in track_history:
                     iou = bbox_iou(track_history[track_id], box, xywh=False)
                     # x1, y1, x2, y2 = box.numpy().tolist()

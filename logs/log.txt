@@ -1,0 +1,8 @@
+2024-04-22 11:24:46,113 engine inited ------
+2024-04-22 11:24:46,113 start run server ------
+2024-04-22 11:24:52,593 add source ====>
+2024-04-22 11:24:52,594 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-22 11:24:52,594 add task task_id 111 ------
+2024-04-22 11:24:52,594 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-22 11:24:53,460 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-22 11:24:53,460 creating stream task 111 ------
