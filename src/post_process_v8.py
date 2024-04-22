@@ -31,10 +31,10 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
 
     ############################################行人检测#####################################################################
     detected_roi_list = [] #存放单帧区域内检测结果(人和包裹)
-    
+    img = frame_image[..., ::-1]
     model_lock.acquire()
     # detect_results = model_v8.predict(source=frame_image, imgsz=640, iou=0.7, conf=0.25, verbose=False)
-    detect_results = model_v8.track(source=frame_image, imgsz=640, iou=0.7, conf=0.25, verbose=False)
+    detect_results = model_v8.track(source=img, imgsz=640, iou=0.7, conf=0.25, verbose=False)
     model_lock.release()
 
     # annotated_frame = detect_results[0].plot()
@@ -76,7 +76,7 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
                         else:
                             cv2.putText(frame_image, "move,id=" + str(track_id), (int(x1) - 10, int(y1) - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, color[1], 2, )
-                track_history[track_id] = box
+            track_history[track_id] = box
         
 
 ###########################################################################################################
