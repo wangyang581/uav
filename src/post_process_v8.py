@@ -11,6 +11,8 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
 
     labels_list = ['pedestrian','people','bicycle','car','van',
                     'truck','tricycle','awning-tricycle','bus','motor']
+    move_count = 0
+    stop_count = 0
     
     detect_box = {}
     ####行人检测区域获取
@@ -45,7 +47,7 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
     for result in detect_results[0]:
         
         xyxy = result.boxes.xyxy.cpu().numpy().tolist()[0]
-        # cls = int(result.boxes.cls.cpu().numpy().tolist()[0])
+        cls = result.boxes.cls.cpu().numpy().tolist()
         # conf = result.boxes.conf.cpu().numpy().tolist()[0]
         boxes = result.boxes.xyxy.cpu()
         track_ids = result.boxes.id
@@ -56,7 +58,7 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
             track_ids = track_ids.int().cpu().tolist()
         # annotated_frame = result.orig_img
 
-        for box, track_id in zip(boxes, track_ids):
+        for box, track_id, cls_id in zip(boxes, track_ids, cls):
             if bool(track_history):
                 
                 if track_id in track_history:
@@ -64,19 +66,23 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
                     # x1, y1, x2, y2 = box.numpy().tolist()
                     x1, y1, x2, y2 = xyxy
                     point_centre = (int(x1 + (x2-x1)/2), int(y1 + (y2-y1)/2))
-                    if judge_in(detect_areass, point_centre):
-
+                    if judge_in(detect_areass, point_centre) and int(cls_id) in [3,4,5,8]:
                         #判断目标是否在区域内添加到detected_roi_list画框使用
-                        
                         detect_box[track_id] = box
                         cv2.rectangle(frame_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4 )
                         if iou > 0.97:
+                            stop_count += 1
                             cv2.putText(frame_image, "stop,id=" + str(track_id), (int(x1) - 10, int(y1) - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 1, color[0], 2, )
                         else:
+                            move_count += 1
                             cv2.putText(frame_image, "move,id=" + str(track_id), (int(x1) - 10, int(y1) - 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 1, color[1], 2, )
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, color[1], 2, )    
             track_history[track_id] = box
+    cv2.putText(frame_image, "stop: " + str(stop_count), (20,50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, color[0], 2, ) 
+    cv2.putText(frame_image, "move: " + str(move_count), (20,80),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, color[1], 2, )
         
 
 ###########################################################################################################
@@ -90,11 +96,11 @@ def post_process_v8(frame_image, task_id, args, logger, model_v8, frame_count,oc
     cv2.imwrite('img/' + str(frame_count)+ '.jpg',frame_image)
 
 
-
-    # try:
-    #     gd.pipe_dict[task_id].stdin.write(frame_image.tobytes())
-    # except Exception as e:
-    #     logger.error(f'rtmp error: {e}')
+    if gd.pipe_dict[task_id] is not None: 
+        try:
+            gd.pipe_dict[task_id].stdin.write(frame_image.tobytes())
+        except Exception as e:
+            logger.error(f'rtmp error: {e}')
 
     ###########################log打印
     # t5 = time.time()

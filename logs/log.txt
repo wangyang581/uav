@@ -30,3 +30,51 @@
 2024-04-22 14:17:37,343 creating video capture task rtsp://127.0.0.1:8554/stream ------
 2024-04-22 14:17:38,235 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
 2024-04-22 14:17:38,235 creating stream task 111 ------
+2024-04-23 10:03:26,034 engine inited ------
+2024-04-23 10:03:26,052 start run server ------
+2024-04-23 10:03:37,938 add source ====>
+2024-04-23 10:03:37,939 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-23 10:03:37,939 add task task_id 111 ------
+2024-04-23 10:03:37,939 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-23 10:03:38,802 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-23 10:03:38,802 creating stream task 111 ------
+2024-04-24 09:24:07,293 engine inited ------
+2024-04-24 09:24:07,293 start run server ------
+2024-04-24 09:24:10,509 add source ====>
+2024-04-24 09:24:10,510 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-24 09:24:10,510 add task task_id 111 ------
+2024-04-24 09:24:10,510 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-24 09:24:11,374 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-24 09:24:11,375 creating stream task 111 ------
+2024-04-24 09:25:10,553 engine inited ------
+2024-04-24 09:25:10,554 start run server ------
+2024-04-24 09:25:11,547 add source ====>
+2024-04-24 09:25:11,548 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-24 09:25:11,548 add task task_id 111 ------
+2024-04-24 09:25:11,548 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-24 09:25:12,441 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-24 09:25:12,441 creating stream task 111 ------
+2024-04-24 09:28:21,018 engine inited ------
+2024-04-24 09:28:21,019 start run server ------
+2024-04-24 09:28:21,959 add source ====>
+2024-04-24 09:28:21,959 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-24 09:28:21,960 add task task_id 111 ------
+2024-04-24 09:28:21,960 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-24 09:28:22,839 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-24 09:28:22,840 creating stream task 111 ------
+2024-04-24 09:30:15,260 engine inited ------
+2024-04-24 09:30:15,260 start run server ------
+2024-04-24 09:30:18,284 add source ====>
+2024-04-24 09:30:18,285 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-24 09:30:18,285 add task task_id 111 ------
+2024-04-24 09:30:18,285 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-24 09:30:19,174 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-24 09:30:19,174 creating stream task 111 ------
+2024-04-24 09:31:27,229 engine inited ------
+2024-04-24 09:31:27,229 start run server ------
+2024-04-24 09:31:29,653 add source ====>
+2024-04-24 09:31:29,654 input: ImmutableMultiDict([('task_id', '111'), ('rtsp_url', 'rtsp://127.0.0.1:8554/stream'), ('frame_rate', '25'), ('rule_info', '{}')])
+2024-04-24 09:31:29,654 add task task_id 111 ------
+2024-04-24 09:31:29,654 creating video capture task rtsp://127.0.0.1:8554/stream ------
+2024-04-24 09:31:30,542 videocapture task_id 111 stream_url rtsp://127.0.0.1:8554/stream start ------
+2024-04-24 09:31:30,542 creating stream task 111 ------
